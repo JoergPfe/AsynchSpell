@@ -5,7 +5,12 @@
  */
 package org.me.forms;
 
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 
 /**
  *
@@ -226,35 +231,189 @@ public class MainForm extends javax.swing.JFrame {
     // End of variables declaration//GEN-END:variables
 
 
-public void callAsyncCallback(String text){
-    
-    try { // Call Web Service Operation(async. callback)
-        com.cdyne.ws.Check service = new com.cdyne.ws.Check();
-        com.cdyne.ws.CheckSoap port = service.getCheckSoap();
-        // TODO initialize WS operation arguments here
-        java.lang.String bodyText = "";
-        javax.xml.ws.AsyncHandler<com.cdyne.ws.CheckTextBodyV2Response> asyncHandler = new javax.xml.ws.AsyncHandler<com.cdyne.ws.CheckTextBodyV2Response>() {
-            public void handleResponse(javax.xml.ws.Response<com.cdyne.ws.CheckTextBodyV2Response> response) {
-                try {
-                    // TODO process asynchronous response here
-                    System.out.println("Result = "+ response.get());
-                } catch(Exception ex) {
-                    // TODO handle exception
+public void callAsyncCallback(String text) {
+
+        
+    com.cdyne.ws.Check service = new com.cdyne.ws.Check();
+    com.cdyne.ws.CheckSoap port = service.getCheckSoap();
+    // initialize WS operation arguments here
+    java.lang.String bodyText = text;
+
+    javax.xml.ws.AsyncHandler<com.cdyne.ws.CheckTextBodyV2Response> asyncHandler = new javax.xml.ws.AsyncHandler<com.cdyne.ws.CheckTextBodyV2Response>() {
+
+        public void handleResponse(final javax.xml.ws.Response<com.cdyne.ws.CheckTextBodyV2Response> response) {
+            SwingUtilities.invokeLater(new Runnable() {
+
+                public void run() {
+
+                    try {
+                        // Create a DocumentSummary object containing the response.
+                        // Note that getDocumentSummary() is called from the Response object
+                        // unlike the synchronous client, where it is called directly from
+                        // com.cdyne.ws.CheckTextBody
+
+                        com.cdyne.ws.DocumentSummary doc = response.get().getDocumentSummary();
+
+
+                        //From the retrieved DocumentSummary,
+                        //identify and display the number of wrongly spelled words:
+
+                        final int no_of_mistakes = doc.getMisspelledWordCount();
+                        String number_of_mistakes = Integer.toString(no_of_mistakes);
+                        tfNumberMistakes.setText(number_of_mistakes);
+
+
+                        // Check to see if there are any mistakes
+                        if (no_of_mistakes > 0) {
+
+                            //From the retrieved document summary,
+                            //identify the array of wrongly spelled words, if any:
+
+                            final List<com.cdyne.ws.Words> allwrongwords = doc.getMisspelledWord();
+
+
+                            //Get the first wrong word
+                            String firstwrongword = allwrongwords.get(0).getWord();
+
+                            //Build a string of all wrong words separated by commas, then display this in tfWrongWords
+
+                            StringBuilder wrongwordsbuilder = new StringBuilder(firstwrongword);
+
+                            for (int i = 1; i < allwrongwords.size(); i++) {
+                                String onewrongword = allwrongwords.get(i).getWord();
+                                wrongwordsbuilder.append(", ");
+                                wrongwordsbuilder.append(onewrongword);
+                            }
+                            String wrongwords = wrongwordsbuilder.toString();
+                            tfWrongWords.setText(wrongwords);
+
+                            //Display the first wrong word
+                            tfWrongWord1.setText(firstwrongword);
+
+
+                            //See how many suggestions there are for the wrong word
+                            int onewordsuggestioncount = allwrongwords.get(0).getSuggestionCount();
+
+
+                            //Check to see if there are any suggestions.
+                            if (onewordsuggestioncount > 0) {
+
+                                //Make a list of all suggestions for correcting the first wrong word, and build them into a String.
+                                //Display the string of concactenated suggestions in the tfSuggestions1 text field
+
+
+                                List<String> allsuggestions = ((com.cdyne.ws.Words) allwrongwords.get(0)).getSuggestions();
+
+                                String firstsuggestion = allsuggestions.get(0);
+                                StringBuilder suggestionbuilder = new StringBuilder(firstsuggestion);
+                                for (int i = 1; i < onewordsuggestioncount; i++) {
+                                    String onesuggestion = allsuggestions.get(i);
+                                    suggestionbuilder.append(", ");
+                                    suggestionbuilder.append(onesuggestion);
+                                }
+                                String onewordsuggestions = suggestionbuilder.toString();
+                                tfSuggestions1.setText(onewordsuggestions);
+
+                            } else {
+                                // No suggestions for this mistake
+                                tfSuggestions1.setText("No suggestions");
+                            }
+                            btNextWrongWord.setEnabled(true);
+
+                            // See if the ActionListener for getting the next wrong word and suggestions
+                            // has already been defined. Unregister it if it has, so only one action listener
+                            // will be registered at one time.
+
+                            if (nextWord != null) {
+                                btNextWrongWord.removeActionListener(nextWord);
+                            }
+
+                            // Define the ActionListener (already instantiated as a private field)
+                            nextWord = new ActionListener() {
+
+                                //Initialize a variable to track the index of the allwrongwords list
+
+                                int wordnumber = 1;
+
+                                public void actionPerformed(ActionEvent e) {
+                                    if (wordnumber < no_of_mistakes) {
+
+                                        // get wrong word in index position wordnumber in allwrongwords
+                                        String onewrongword = allwrongwords.get(wordnumber).getWord();
+
+                                        //next part is same as code for first wrong word
+
+                                        tfWrongWord1.setText(onewrongword);
+                                        int onewordsuggestioncount = allwrongwords.get(wordnumber).getSuggestionCount();
+                                        if (onewordsuggestioncount > 0) {
+                                            List<String> allsuggestions = allwrongwords.get(wordnumber).getSuggestions();
+                                            String firstsuggestion = allsuggestions.get(0);
+                                            StringBuilder suggestionbuilder = new StringBuilder(firstsuggestion);
+                                            for (int j = 1; j < onewordsuggestioncount; j++) {
+                                                String onesuggestion = allsuggestions.get(j);
+                                                suggestionbuilder.append(", ");
+                                                suggestionbuilder.append(onesuggestion);
+                                            }
+                                            String onewordsuggestions = suggestionbuilder.toString();
+                                            tfSuggestions1.setText(onewordsuggestions);
+                                        } else {
+                                            tfSuggestions1.setText("No suggestions");
+                                        }
+
+                                        // increase i by 1
+                                        wordnumber++;
+
+                                    } else {
+                                        // No more wrong words! Disable next word button
+                                        // Enable Check button
+                                        btNextWrongWord.setEnabled(false);
+                                        btCheck.setEnabled(true);
+                                    }
+                                }
+                            };
+
+                            // Register the ActionListener
+                            btNextWrongWord.addActionListener(nextWord);
+
+                        } else {
+                            // The text has no mistakes
+                            // Enable Check button
+                            tfWrongWords.setText("No wrong words");
+                            tfSuggestions1.setText("No suggestions");
+                            tfWrongWord1.setText("--");
+                            btCheck.setEnabled(true);
+
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+
+                    // Clear the progress bar
+                    pbProgress.setIndeterminate(false);
+                    pbProgress.setString("");
                 }
-            }
-        };
-        java.util.concurrent.Future<? extends java.lang.Object> result = port.checkTextBodyV2Async(bodyText, asyncHandler);
-        while(!result.isDone()) {
-            // do something
-            Thread.sleep(100);
+            });
+
         }
-    } catch (Exception ex) {
-        // TODO handle custom exceptions here
+    };
+
+    java.util.concurrent.Future result = port.checkTextBodyV2Async(bodyText, asyncHandler);
+    while (!result.isDone()) {
+        try {
+
+
+            //Display a message that the application is waiting for a response from the server
+            tfWrongWords.setText("Waiting...");
+            Thread.sleep(100);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(MainForm.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
+}
         
 }
 
 
 
 
-}
+
