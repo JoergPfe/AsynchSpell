@@ -5,12 +5,16 @@
  */
 package org.me.forms;
 
+import java.awt.event.ActionListener;
+
 /**
  *
  * @author joergpfendert
  */
 public class MainForm extends javax.swing.JFrame {
 
+    
+    private ActionListener nextWord;
     /**
      * Creates new form MainForm
      */
@@ -66,6 +70,11 @@ public class MainForm extends javax.swing.JFrame {
         tfNumberMistakes.setText("Number of misstakes:");
 
         btCheck.setText("check text");
+        btCheck.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btCheckActionPerformed(evt);
+            }
+        });
 
         btNextWrongWord.setText("next wrong Word");
 
@@ -89,13 +98,12 @@ public class MainForm extends javax.swing.JFrame {
                             .addComponent(jScrollPane1)
                             .addComponent(jScrollPane2)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(btNextWrongWord)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(btCheck)
+                                .addGap(53, 53, 53)
                                 .addComponent(pbProgress, javax.swing.GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE))
                             .addComponent(jScrollPane3)
                             .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(btCheck)
                                     .addGroup(layout.createSequentialGroup()
                                         .addComponent(tfWrongWord1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -110,7 +118,9 @@ public class MainForm extends javax.swing.JFrame {
                         .addComponent(jLabel1)
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel2)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel2)
+                            .addComponent(btNextWrongWord))
                         .addGap(0, 0, Short.MAX_VALUE))))
         );
         layout.setVerticalGroup(
@@ -128,8 +138,8 @@ public class MainForm extends javax.swing.JFrame {
                         .addComponent(pbProgress, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(btNextWrongWord, javax.swing.GroupLayout.DEFAULT_SIZE, 30, Short.MAX_VALUE)
-                        .addGap(18, 18, 18)))
+                        .addComponent(btCheck)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 14, Short.MAX_VALUE)))
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(tfNumberMistakes, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel3))
@@ -141,9 +151,9 @@ public class MainForm extends javax.swing.JFrame {
                     .addComponent(jLabel4))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 72, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(btCheck)
-                .addGap(99, 99, 99))
+                .addGap(18, 18, 18)
+                .addComponent(btNextWrongWord, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(98, 98, 98))
         );
 
         pack();
@@ -152,6 +162,15 @@ public class MainForm extends javax.swing.JFrame {
     private void tfSuggestions1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tfSuggestions1ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_tfSuggestions1ActionPerformed
+
+    private void btCheckActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btCheckActionPerformed
+    String text = tfYourText.getText();
+    pbProgress.setIndeterminate(true);
+    pbProgress.setString("waiting for server");
+    btCheck.setEnabled(false);
+    callAsyncCallback(text);
+
+    }//GEN-LAST:event_btCheckActionPerformed
 
     /**
      * @param args the command line arguments
@@ -205,4 +224,37 @@ public class MainForm extends javax.swing.JFrame {
     private javax.swing.JTextField tfWrongWords;
     private javax.swing.JTextField tfYourText;
     // End of variables declaration//GEN-END:variables
+
+
+public void callAsyncCallback(String text){
+    
+    try { // Call Web Service Operation(async. callback)
+        com.cdyne.ws.Check service = new com.cdyne.ws.Check();
+        com.cdyne.ws.CheckSoap port = service.getCheckSoap();
+        // TODO initialize WS operation arguments here
+        java.lang.String bodyText = "";
+        javax.xml.ws.AsyncHandler<com.cdyne.ws.CheckTextBodyV2Response> asyncHandler = new javax.xml.ws.AsyncHandler<com.cdyne.ws.CheckTextBodyV2Response>() {
+            public void handleResponse(javax.xml.ws.Response<com.cdyne.ws.CheckTextBodyV2Response> response) {
+                try {
+                    // TODO process asynchronous response here
+                    System.out.println("Result = "+ response.get());
+                } catch(Exception ex) {
+                    // TODO handle exception
+                }
+            }
+        };
+        java.util.concurrent.Future<? extends java.lang.Object> result = port.checkTextBodyV2Async(bodyText, asyncHandler);
+        while(!result.isDone()) {
+            // do something
+            Thread.sleep(100);
+        }
+    } catch (Exception ex) {
+        // TODO handle custom exceptions here
+    }
+        
+}
+
+
+
+
 }
